@@ -11,6 +11,60 @@ canvas {
   background: #000;
 }
 
+#touchControls {
+  position: fixed;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  display: none;
+  justify-content: space-between;
+  align-items: flex-end;
+  z-index: 900;
+  pointer-events: auto;
+}
+
+#touchMovement {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(3, 44px);
+  gap: 4px;
+}
+
+#touchControls .touchBlank {
+  width: 44px;
+  height: 44px;
+}
+
+#touchAttacks {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: calc(100vw - 190px);
+}
+
+.touchBtn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#touchAttacks .attackBtn {
+  width: auto;
+  min-width: 72px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+
 #overlay {
   position: absolute;
   top: 0;

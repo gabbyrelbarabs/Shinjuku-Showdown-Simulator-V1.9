@@ -37,6 +37,21 @@ const resumeButton = document.getElementById("resumeButton");
 const restartButton = document.getElementById("restartButton");
 const mainMenuButton = document.getElementById("mainMenuButton");
 
+const touchControls = document.getElementById("touchControls");
+const moveUpBtn = document.getElementById("moveUpBtn");
+const moveLeftBtn = document.getElementById("moveLeftBtn");
+const moveRightBtn = document.getElementById("moveRightBtn");
+const moveDownBtn = document.getElementById("moveDownBtn");
+const blueBtn = document.getElementById("blueBtn");
+const redBtn = document.getElementById("redBtn");
+const maxBlueBtn = document.getElementById("maxBlueBtn");
+const maxRedBtn = document.getElementById("maxRedBtn");
+const hollowPurpleBtn = document.getElementById("hollowPurpleBtn");
+const reverseBtn = document.getElementById("reverseBtn");
+const domainBtn = document.getElementById("domainBtn");
+const transmitBtn = document.getElementById("transmitBtn");
+const sixEyesBtn = document.getElementById("sixEyesBtn");
+
 const blackFlashOverlay = document.getElementById("blackFlashOverlay");
 const blackFlashImage = document.getElementById("blackFlashImage");
 
@@ -60,6 +75,9 @@ const blackFlashSound = new Audio("BlackFlash.mp3");
 
 const fugaAudio = new Audio("Fuga.mp3");
 fugaAudio.volume = 1;
+const adaptAudio = new Audio("adapt.mp3");
+adaptAudio.volume = 1;
+
 const boltImage = new Image();
 boltImage.src = "Bolt.png";
 const fugaImage = new Image();
@@ -528,6 +546,70 @@ function triggerDash(direction) {
   }
 }
 
+function bindMovementButton(button, keyName, dashDirection = null, shortHop = false) {
+  if (!button) return;
+
+  const press = (e) => {
+    e.preventDefault();
+    if (freezeEverything || gamePaused || gameOver) return;
+
+    keys[keyName] = true;
+
+    if (dashDirection) {
+      const now = Date.now();
+      if (dashDirection === "left") {
+        if (now - lastTapLeft < dashThreshold) triggerDash("left");
+        lastTapLeft = now;
+      } else {
+        if (now - lastTapRight < dashThreshold) triggerDash("right");
+        lastTapRight = now;
+      }
+    }
+  };
+
+  const release = (e) => {
+    e.preventDefault();
+    keys[keyName] = false;
+    if (shortHop && !player.isOnGround && player.vy < 0) {
+      player.vy *= 0.5;
+    }
+  };
+
+  button.addEventListener("pointerdown", press);
+  button.addEventListener("pointerup", release);
+  button.addEventListener("pointerleave", release);
+  button.addEventListener("pointercancel", release);
+}
+
+function bindTapButton(button, action) {
+  if (!button) return;
+
+  button.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    if (freezeEverything || gamePaused || gameOver) return;
+    action();
+  });
+}
+
+bindMovementButton(moveUpBtn, "arrowup", null, true);
+bindMovementButton(moveLeftBtn, "arrowleft", "left");
+bindMovementButton(moveRightBtn, "arrowright", "right");
+bindMovementButton(moveDownBtn, "arrowdown");
+
+bindTapButton(blueBtn, () => shootBullet("blue"));
+bindTapButton(redBtn, () => {
+  if (blueBulletCounter >= 5) {
+    shootBullet("red");
+    blueBulletCounter = 0;
+  }
+});
+bindTapButton(maxBlueBtn, attemptMaxBlue);
+bindTapButton(maxRedBtn, attemptMaxRed);
+bindTapButton(hollowPurpleBtn, attemptHollowPurple);
+bindTapButton(reverseBtn, attemptReverseCursed);
+bindTapButton(domainBtn, attemptDomainExpansion);
+bindTapButton(sixEyesBtn, attemptSixEyesAwakening);
+
 function startGame() {
   if (titleMusic) {
     titleMusic.pause();
@@ -544,6 +626,7 @@ function startGame() {
   tutorialGuide.style.display = "none";
 
   pauseButton.style.display = "block";
+  if (touchControls) touchControls.style.display = "flex";
   
   bgMusic.play().catch((err) => console.log("Background music playback prevented.", err));
   resetGame();
@@ -592,6 +675,7 @@ function spawnPhase2ExtraBosses() {
     maxHp: 35000,
     state: "normal",
     defenseMultiplier: 1,
+	adaptTimer: 0,
     image: mahoragaImage,
     contactDamage: 1,
     stunned: false,
@@ -619,6 +703,8 @@ function spawnPhase2ExtraBosses() {
 }
 
 function updateBossMahoraga(dt) {
+  if (!bossMahoraga || bossMahoraga.hp <= 0) return;
+  
   if (bossMahoraga.stunned) {
     bossMahoraga.stunTimer -= dt;
     if (bossMahoraga.stunTimer <= 0) {
@@ -627,7 +713,11 @@ function updateBossMahoraga(dt) {
     return;
   }
   
-  bossMahoraga.defenseMultiplier += 0.1 * (dt / 30);
+  bossMahoraga.adaptTimer += dt;
+  while (bossMahoraga.adaptTimer >= 20) {
+    bossMahoraga.adaptTimer -= 20;
+    applyMahoragaAdaptation();
+  }
   
   let targetX = (boss.x + player.x) / 2;
   if (Math.abs(bossMahoraga.x - targetX) > 5) {
@@ -646,7 +736,18 @@ function updateBossMahoraga(dt) {
   bossMahoraga.y += bossMahoraga.vy;
 }
 
+function applyMahoragaAdaptation() {
+  if (!bossMahoraga) return;
+
+  adaptAudio.currentTime = 0;
+  adaptAudio.play().catch((e) => console.log("adapt.mp3 playback prevented:", e));
+
+  bossMahoraga.defenseMultiplier += 0.08;
+}
+
 function updateBossAgito(dt) {
+  if (!bossAgito || bossAgito.hp <= 0) return;
+  
   if (bossAgito.stunned) {
     bossAgito.stunTimer -= dt;
     if (bossAgito.stunTimer <= 0) {
@@ -693,6 +794,7 @@ function startSecondPhaseCutscene() {
   freezeEverything = true;
   cutsceneTimer = 0;
   domainExpansionAudio.currentTime = 0;
+  domainExpansionAudio.volume = 1;
   domainExpansionAudio.play().catch((e) => console.log("Domain expansion audio blocked:", e));
 }
 
@@ -1345,7 +1447,6 @@ function shootBullet(color) {
 	sixEyesRedCount += increment;
     sixEyesRedCount = Math.min(sixEyesRedCount, 100);
 	
-	
     let hollowRedCap =
       currentBGImage === infiniteVoidBG
         ? Math.round(NORMAL_HOLLOW_PURPLE_RED * 0.75)
@@ -1599,28 +1700,30 @@ function applyPowerup(pu) {
       player.speedTimer = 10;
       break;
     case "redorange":
-      const choice = Math.floor(Math.random() * 3);
-      if (choice === 0) {
-        hollowBlueCounter =
-          currentBGImage === infiniteVoidBG
-            ? Math.round(NORMAL_HOLLOW_PURPLE_BLUE * 0.75)
-            : NORMAL_HOLLOW_PURPLE_BLUE;
-        hollowRedCounter =
-          currentBGImage === infiniteVoidBG
-            ? Math.round(NORMAL_HOLLOW_PURPLE_RED * 0.75)
-            : NORMAL_HOLLOW_PURPLE_RED;
-      } else if (choice === 1) {
-        totalBlueForMaxBlue =
-          currentBGImage === infiniteVoidBG
-            ? Math.round(NORMAL_MAX_BLUE * 0.75)
-            : NORMAL_MAX_BLUE;
-      } else {
-        redHitCounterForMaxRed =
-          currentBGImage === infiniteVoidBG
-            ? Math.round(NORMAL_MAX_RED * 0.75)
-            : NORMAL_MAX_RED;
-      }
-      break;
+	  const choice = Math.floor(Math.random() * 4);
+	  if (choice === 0) {
+		hollowBlueCounter =
+		currentBGImage === infiniteVoidBG
+		  ? Math.round(NORMAL_HOLLOW_PURPLE_BLUE * 0.75)
+          : NORMAL_HOLLOW_PURPLE_BLUE;
+		hollowRedCounter =
+		currentBGImage === infiniteVoidBG
+          ? Math.round(NORMAL_HOLLOW_PURPLE_RED * 0.75)
+          : NORMAL_HOLLOW_PURPLE_RED;
+	  } else if (choice === 1) {
+		totalBlueForMaxBlue =
+		currentBGImage === infiniteVoidBG
+          ? Math.round(NORMAL_MAX_BLUE * 0.75)
+          : NORMAL_MAX_BLUE;
+	  } else if (choice === 2) {
+		redHitCounterForMaxRed =
+		currentBGImage === infiniteVoidBG
+          ? Math.round(NORMAL_MAX_RED * 0.75)
+          : NORMAL_MAX_RED;
+	  } else {
+		reverseChargeCounter = REVERSE_CT_REQUIREMENT;
+	  }
+	  break;
     case "green":
       player.hp = Math.min(player.maxHp, player.hp + 0.25 * player.maxHp);
       break;
