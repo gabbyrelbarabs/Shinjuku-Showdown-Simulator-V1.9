@@ -294,6 +294,108 @@ boss.fugaTarget = null;
 boss.tintColor = null;
 boss.fugaFlashTimer = 0;
 
+//SETTINGS STUFF
+
+const menuSettingsButton = document.getElementById("menuSettingsButton");
+const pauseSettingsButton = document.getElementById("pauseSettingsButton");
+const settingsMenu = document.getElementById("settingsMenu");
+const musicToggleButton = document.getElementById("musicToggleButton");
+const sfxToggleButton = document.getElementById("sfxToggleButton");
+const mobileToggleButton = document.getElementById("mobileToggleButton");
+const closeSettingsButton = document.getElementById("closeSettingsButton");
+
+let musicEnabled = true;
+let soundEffectsEnabled = true;
+let mobileControlsEnabled = true;
+
+const musicTracks = [titleMusic, bgMusic, malevolentShrineAudio, heavenAndEarthMusic];
+const soundEffectTracks = [domainExpansionAudio, infiniteVoidAudio, blackFlashSound, fugaAudio];
+
+function playSoundEffect(audio) {
+  if (!audio) return;
+  audio.muted = !soundEffectsEnabled;
+  audio.play().catch((err) => console.log(audio.src + " playback prevented:", err));
+}
+
+function syncAudioSettings() {
+  musicTracks.forEach((audio) => {
+    if (audio) audio.muted = !musicEnabled;
+  });
+  soundEffectTracks.forEach((audio) => {
+    if (audio) audio.muted = !soundEffectsEnabled;
+  });
+}
+
+function updateSettingsUI() {
+  if (musicToggleButton) musicToggleButton.textContent = "Music: " + (musicEnabled ? "On" : "Off");
+  if (sfxToggleButton) sfxToggleButton.textContent = "Sound Effects: " + (soundEffectsEnabled ? "On" : "Off");
+  if (mobileToggleButton) mobileToggleButton.textContent = "Mobile Controls: " + (mobileControlsEnabled ? "On" : "Off");
+}
+
+function syncMobileControls() {
+  if (!touchControls) return;
+  touchControls.classList.toggle("mobile-hidden", !mobileControlsEnabled);
+  touchControls.style.display = mobileControlsEnabled ? "flex" : "none";
+}
+
+function openSettingsMenu() {
+  syncAudioSettings();
+  updateSettingsUI();
+  settingsMenu.style.display = "block";
+}
+
+function closeSettingsMenu() {
+  settingsMenu.style.display = "none";
+}
+
+function toggleMusicSetting() {
+  musicEnabled = !musicEnabled;
+  syncAudioSettings();
+  updateSettingsUI();
+}
+
+function toggleSfxSetting() {
+  soundEffectsEnabled = !soundEffectsEnabled;
+  syncAudioSettings();
+  updateSettingsUI();
+}
+
+function toggleMobileControlsSetting() {
+  mobileControlsEnabled = !mobileControlsEnabled;
+  syncMobileControls();
+  updateSettingsUI();
+}
+
+if (menuSettingsButton) {
+  menuSettingsButton.addEventListener("click", openSettingsMenu);
+}
+
+if (pauseSettingsButton) {
+  pauseSettingsButton.addEventListener("click", openSettingsMenu);
+}
+
+if (musicToggleButton) {
+  musicToggleButton.addEventListener("click", toggleMusicSetting);
+}
+
+if (sfxToggleButton) {
+  sfxToggleButton.addEventListener("click", toggleSfxSetting);
+}
+
+if (mobileToggleButton) {
+  mobileToggleButton.addEventListener("click", toggleMobileControlsSetting);
+}
+
+if (closeSettingsButton) {
+  closeSettingsButton.addEventListener("click", closeSettingsMenu);
+}
+
+if (settingsMenu) {
+  settingsMenu.addEventListener("click", (e) => {
+    if (e.target === settingsMenu) closeSettingsMenu();
+  });
+}
+
 function resetGame() {
 	titleMusic.pause();
   domainExpansionAudio.pause();
@@ -1240,6 +1342,9 @@ function gameLoop() {
   }
   draw();
   requestAnimationFrame(gameLoop);
+  syncAudioSettings();
+  updateSettingsUI();
+  syncMobileControls();
 }
 
 function formatBattleTime(seconds) {

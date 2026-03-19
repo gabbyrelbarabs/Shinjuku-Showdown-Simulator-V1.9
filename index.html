@@ -17,6 +17,7 @@
 	  <h6>A Personal Project by: Gabriel A. Barabar</h6>
     </div>
     <button id="startButton">Begin Battle!</button>
+	<button id="menuSettingsButton">Settings</button>
 	<button id="tutorialToggle">Battle Guide</button>
   </div>
   
@@ -24,13 +25,22 @@
       <img src="pause.png" alt="Pause" style="width: 50px; height: 50px;">
     </button>
     
-    <div id="pauseMenu" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-         background: white; border: 2px solid black; padding: 20px; z-index: 2000; text-align: center;">
-      <div id="pauseStats" style="margin-bottom: 20px; font-size: 18px;"></div>
-      <button id="resumeButton">Resume</button>
-      <button id="restartButton">Restart</button>
-      <button id="mainMenuButton">Main Menu</button>
-    </div>
+    <div id="pauseMenu" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 1px solid white; padding: 20px; z-index: 2000; text-align: center; color: white;">
+	  <div id="pauseStats" style="margin-bottom: 20px; font-size: 18px;"></div>
+	  <button id="resumeButton">Resume</button>
+	  <button id="pauseSettingsButton">Settings</button>
+	  <button id="restartButton">Restart</button>
+	  <button id="mainMenuButton">Main Menu</button>
+	</div>
+	
+	<div id="settingsMenu">
+	  <h3 style="margin-top: 0;">Settings</h3>
+	  <div class="settingsRow"><button id="musicToggleButton" type="button"  style="width: 150px;">Music: On</button></div>
+	  <div class="settingsRow"><button id="sfxToggleButton" type="button" style="width: 200px;">Sound Effects: On</button></div>
+	  <div class="settingsRow"><button id="mobileToggleButton" type="button"  style="width: 220px;">Mobile Controls: On</button></div>
+	  <hr>
+	  <button id="closeSettingsButton" type="button"  style="width: 100px;">Close</button>
+	</div>
 	
   <div id="tutorialGuide">
     <div class="tabs">
@@ -56,7 +66,7 @@
 	  <p><strong>Controls: </strong></p>
 	  <ul>
 		<li><strong>Computer: </strong>Use ASWD or the arrow keys to move around. Double tap A or D to dash, other controls will be mentioned in Player Info.</li>
-		<li><strong>Mobile: </strong> Nonexistent. (for now)</li>
+		<li><strong>Mobile: </strong>Use D-Pad to move around. Double press left or right to dash, other controls have corresponding buttons.</li>
 	  </ul>
       <p>Good luck, and may the greatest sorcerer win!</p>
     </div>
