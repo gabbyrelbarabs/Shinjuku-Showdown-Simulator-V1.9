@@ -73,6 +73,19 @@ const heavenAndEarthMusic = new Audio("HeavenAndEarth.mp3");
 heavenAndEarthMusic.loop = true;
 const blackFlashSound = new Audio("BlackFlash.mp3");
 
+const dismantleAudio = new Audio("dismantle.mp3");
+dismantleAudio.volume = 1;
+const dismantle2Audio = new Audio("dismantle2.mp3");
+dismantle2Audio.volume = 0.6;
+
+const cleave1Audio = new Audio("cleave1.mp3");
+const cleave2Audio = new Audio("cleave2.mp3");
+const cleave3Audio = new Audio("cleave3.mp3");
+const cleave4Audio = new Audio("cleave4.mp3");
+[cleave1Audio, cleave2Audio, cleave3Audio, cleave4Audio].forEach((audio) => {
+  audio.volume = 0.1;
+});
+
 const fugaAudio = new Audio("Fuga.mp3");
 fugaAudio.volume = 1;
 const adaptAudio = new Audio("adapt.mp3");
@@ -206,6 +219,7 @@ let boss = {
     airTime: 0,
     laserAttackPhase: "",
     laserAttackTotalTime: 0,
+	laserAttack2ShotFired: false,
     laserSpawnTimer: 0,
     groundLasers: [],
     chargeTimer: 0,
@@ -468,6 +482,7 @@ function resetGame() {
     airTime: 0,
     laserAttackPhase: "",
     laserAttackTotalTime: 0,
+	laserAttack2ShotFired: false,
     laserSpawnTimer: 0,
     groundLasers: [],
     chargeTimer: 0,
@@ -728,6 +743,7 @@ function startGame() {
   tutorialGuide.style.display = "none";
 
   pauseButton.style.display = "block";
+  syncMobileControls();
   if (touchControls) touchControls.style.display = "flex";
   
   bgMusic.play().catch((err) => console.log("Background music playback prevented.", err));
@@ -1015,16 +1031,129 @@ function gameLoop() {
       b.x += b.vx;
       b.y += b.vy;
 	  
-      if (
-		b.x < 0 ||
-		b.x > canvas.width ||
-		b.y < 0 ||
-		b.y > canvas.height
-	) {
+      if ( b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height ) {
         bullets.splice(i, 1);
         continue;
       }
 	  
+	  let hitSomething = false;
+
+      if ( bossMahoraga && circleRectCollide( b.x, b.y, b.radius, bossMahoraga.x, bossMahoraga.y, bossMahoraga.width, bossMahoraga.height ) ) {
+        if (b.maxRed) {
+          bossMahoraga.hp -= 2500;
+          bossMahoraga.x = b.vx > 0 ? canvas.width - bossMahoraga.width : 0;
+          hitSomething = true;
+        } else if (b.maxBlue) {
+          bossMahoraga.x =
+            player.lastDirection === "right"
+              ? player.x + player.width
+              : player.x - bossMahoraga.width;
+          bossMahoraga.hp -= 1000;
+          hitSomething = true;
+        } else {
+          let damage = (b.color === "blue" ? 75 : 200) * player.damageMultiplier;
+          damage /= bossMahoraga.defenseMultiplier;
+
+          if (b.color === "blue") {
+            let dx =
+              player.x +
+              player.width / 2 -
+              (bossMahoraga.x + bossMahoraga.width / 2);
+            let dy =
+              player.y +
+              player.height / 2 -
+              (bossMahoraga.y + bossMahoraga.height / 2);
+            let mag = Math.sqrt(dx * dx + dy * dy);
+            if (mag > 0) {
+              let pull = 8 * scale;
+              bossMahoraga.x += (dx / mag) * pull;
+              bossMahoraga.y += (dy / mag) * pull;
+            }
+          } else if (b.color === "red") {
+            let dx =
+              bossMahoraga.x +
+              bossMahoraga.width / 2 -
+              (player.x + player.width / 2);
+            let dy =
+              bossMahoraga.y +
+              bossMahoraga.height / 2 -
+              (player.y + player.height / 2);
+            let mag = Math.sqrt(dx * dx + dy * dy);
+            if (mag > 0) {
+              let push = 80 * scale;
+              bossMahoraga.x += (dx / mag) * push;
+              bossMahoraga.y += (dy / mag) * push;
+            }
+          }
+
+          bossMahoraga.hp -= damage;
+          hitSomething = true;
+        }
+      }
+
+      if (
+        bossAgito &&
+        circleRectCollide(
+          b.x,
+          b.y,
+          b.radius,
+          bossAgito.x,
+          bossAgito.y,
+          bossAgito.width,
+          bossAgito.height
+        )
+      ) {
+        if (b.maxRed) {
+          bossAgito.hp -= 2500;
+          bossAgito.x = b.vx > 0 ? canvas.width - bossAgito.width : 0;
+          hitSomething = true;
+        } else if (b.maxBlue) {
+          bossAgito.x =
+            player.lastDirection === "right"
+              ? player.x + player.width
+              : player.x - bossAgito.width;
+          bossAgito.hp -= 1000;
+          hitSomething = true;
+        } else {
+          let damage = (b.color === "blue" ? 75 : 200) * player.damageMultiplier;
+
+          if (b.color === "blue") {
+            let dx =
+              player.x +
+              player.width / 2 -
+              (bossAgito.x + bossAgito.width / 2);
+            let dy =
+              player.y +
+              player.height / 2 -
+              (bossAgito.y + bossAgito.height / 2);
+            let mag = Math.sqrt(dx * dx + dy * dy);
+            if (mag > 0) {
+              let pull = 8 * scale;
+              bossAgito.x += (dx / mag) * pull;
+              bossAgito.y += (dy / mag) * pull;
+            }
+          } else if (b.color === "red") {
+            let dx =
+              bossAgito.x +
+              bossAgito.width / 2 -
+              (player.x + player.width / 2);
+            let dy =
+              bossAgito.y +
+              bossAgito.height / 2 -
+              (player.y + player.height / 2);
+            let mag = Math.sqrt(dx * dx + dy * dy);
+            if (mag > 0) {
+              let push = 80 * scale;
+              bossAgito.x += (dx / mag) * push;
+              bossAgito.y += (dy / mag) * push;
+            }
+          }
+
+          bossAgito.hp -= damage;
+          hitSomething = true;
+        }
+      }
+
       if (
         boss.state !== "dashAttackCharge" &&
         circleRectCollide(b.x, b.y, b.radius, boss.x, boss.y, boss.width, boss.height)
@@ -1034,8 +1163,7 @@ function gameLoop() {
           boss.hp -= 2500;
           boss.x = b.vx > 0 ? canvas.width - boss.width : 0;
           boss.needsSlamShake = true;
-          bullets.splice(i, 1);
-          continue;
+          hitSomething = true;
         } else if (b.maxBlue) {
           maxBlueFlashTimer = 0.1;
           boss.x =
@@ -1049,14 +1177,13 @@ function gameLoop() {
           blackFlashImage.src = "BlackFlash.jpg";
           blackFlashSound.currentTime = 0;
           blackFlashSound.play();
-          bullets.splice(i, 1);
-          continue;
+          hitSomething = true;
         } else {
           let bulletDamage = b.color === "blue" ? 75 : 200;
           let actualDamage = bulletDamage * player.damageMultiplier;
           if (currentBGImage === infiniteVoidBG) actualDamage *= 1.25;
           actualDamage *= getDistanceDamageMultiplier();
-		  
+
           if (b.color === "blue") {
             let dx = player.x + player.width / 2 - (boss.x + boss.width / 2);
             let dy = player.y + player.height / 2 - (boss.y + boss.height / 2);
@@ -1076,7 +1203,7 @@ function gameLoop() {
               boss.y += (dy / mag) * push;
             }
           }
-		  
+
           if (bossPhase === 1) {
             if (!phaseTwoTriggered && boss.hp - actualDamage < 0.05 * boss.maxHp) {
               boss.hp = 0.05 * boss.maxHp;
@@ -1097,13 +1224,17 @@ function gameLoop() {
           } else {
             boss.hp -= actualDamage;
           }
-		  
+
           player.hp = Math.min(player.maxHp, player.hp + actualDamage * 0.001);
-          bullets.splice(i, 1);
-          continue;
+          hitSomething = true;
         }
       }
-	  
+
+      if (hitSomething) {
+        bullets.splice(i, 1);
+        continue;
+      }
+
       if (
         bossMahoraga &&
         circleRectCollide(
@@ -1235,6 +1366,7 @@ function gameLoop() {
 	
     if (rectIntersect(player, boss) && !player.invincible) {
       player.contactDamageTimer += dt;
+	  player.contactDmgTimer += dt;
       if (player.contactDamageTimer >= 0.2) {
         let dmg = Math.random() < 0.2 ? 25 : 5;
         if (currentBGImage === infiniteVoidBG) dmg *= 0.75;
@@ -1242,6 +1374,10 @@ function gameLoop() {
         if (Math.random() < 0.2) spawnCleaveSlash();
         player.contactDamageTimer = 0;
       }
+	  if (player.contactDamageTimer >= 0.05) {
+		  playRandomCleaveSound();
+		  player.contactDmgTimer = 0;
+	  }
     } else {
       player.contactDamageTimer = 0;
     }
@@ -1598,33 +1734,74 @@ function shootBullet(color) {
 
 function updateSuperAttack() {
   if (!superAttack) return;
+
   let dir = superAttack.direction === "left" ? -1 : 1;
   superAttack.x += 12 * dir;
   superAttack.lifetime -= 1 / 60;
-  
+
   if (superAttack.lifetime <= 0) {
     superAttack = null;
-  } else {
-    if (
-      circleRectCollide(
-        superAttack.x,
-        superAttack.y,
-        superAttack.radius,
-        boss.x,
-        boss.y,
-        boss.width,
-        boss.height
-      )
-    ) {
-      let actualDamage = superAttack.damage * player.damageMultiplier;
-      if (currentBGImage === infiniteVoidBG) actualDamage *= 1.25;
-      actualDamage *= getDistanceDamageMultiplier();
-      boss.hp -= actualDamage;
-      player.hp = Math.min(player.maxHp, player.hp + actualDamage * 0.001);
-      superAttack = null;
-    } else if (superAttack.x < 0 || superAttack.x > canvas.width) {
-      superAttack = null;
-    }
+    return;
+  }
+
+  let actualDamage = superAttack.damage * player.damageMultiplier;
+  if (currentBGImage === infiniteVoidBG) actualDamage *= 1.25;
+  actualDamage *= getDistanceDamageMultiplier();
+
+  let hitSomething = false;
+
+  if (
+    circleRectCollide(
+      superAttack.x,
+      superAttack.y,
+      superAttack.radius,
+      boss.x,
+      boss.y,
+      boss.width,
+      boss.height
+    )
+  ) {
+    boss.hp -= actualDamage;
+    hitSomething = true;
+  }
+
+  if (
+    bossMahoraga &&
+    circleRectCollide(
+      superAttack.x,
+      superAttack.y,
+      superAttack.radius,
+      bossMahoraga.x,
+      bossMahoraga.y,
+      bossMahoraga.width,
+      bossMahoraga.height
+    )
+  ) {
+    bossMahoraga.hp -= actualDamage / bossMahoraga.defenseMultiplier;
+    hitSomething = true;
+  }
+
+  if (
+    bossAgito &&
+    circleRectCollide(
+      superAttack.x,
+      superAttack.y,
+      superAttack.radius,
+      bossAgito.x,
+      bossAgito.y,
+      bossAgito.width,
+      bossAgito.height
+    )
+  ) {
+    bossAgito.hp -= actualDamage;
+    hitSomething = true;
+  }
+
+  if (hitSomething) {
+    player.hp = Math.min(player.maxHp, player.hp + actualDamage * 0.001);
+    superAttack = null;
+  } else if (superAttack.x < 0 || superAttack.x > canvas.width) {
+    superAttack = null;
   }
 }
 
@@ -1774,7 +1951,7 @@ function fireSuperAttack() {
 }
 
 function spawnPowerup() {
-  const types = ["red", "blue", "yellow", "redorange", "green", "brown"];
+  const types = ["red","redorange","yellow","green","blue","brown"];
   const type = types[Math.floor(Math.random() * types.length)];
   const plat = platforms[Math.floor(Math.random() * platforms.length)];
   const puWidth = 20 * scale,
@@ -1804,31 +1981,56 @@ function applyPowerup(pu) {
       player.speedMultiplier = 2;
       player.speedTimer = 10;
       break;
-    case "redorange":
-	  const choice = Math.floor(Math.random() * 4);
-	  if (choice === 0) {
-		hollowBlueCounter =
-		currentBGImage === infiniteVoidBG
-		  ? Math.round(NORMAL_HOLLOW_PURPLE_BLUE * 0.75)
+	case "redorange":
+      let factor = currentBGImage === infiniteVoidBG ? 0.75 : 1;
+
+      let neededBlue =
+        currentBGImage === infiniteVoidBG
+          ? Math.round(NORMAL_HOLLOW_PURPLE_BLUE * factor)
           : NORMAL_HOLLOW_PURPLE_BLUE;
-		hollowRedCounter =
-		currentBGImage === infiniteVoidBG
-          ? Math.round(NORMAL_HOLLOW_PURPLE_RED * 0.75)
+      let neededRed =
+        currentBGImage === infiniteVoidBG
+          ? Math.round(NORMAL_HOLLOW_PURPLE_RED * factor)
           : NORMAL_HOLLOW_PURPLE_RED;
-	  } else if (choice === 1) {
-		totalBlueForMaxBlue =
-		currentBGImage === infiniteVoidBG
-          ? Math.round(NORMAL_MAX_BLUE * 0.75)
+      let neededMaxBlue =
+        currentBGImage === infiniteVoidBG
+          ? Math.round(NORMAL_MAX_BLUE * factor)
           : NORMAL_MAX_BLUE;
-	  } else if (choice === 2) {
-		redHitCounterForMaxRed =
-		currentBGImage === infiniteVoidBG
-          ? Math.round(NORMAL_MAX_RED * 0.75)
+      let neededMaxRed =
+        currentBGImage === infiniteVoidBG
+          ? Math.round(NORMAL_MAX_RED * factor)
           : NORMAL_MAX_RED;
-	  } else {
-		reverseChargeCounter = REVERSE_CT_REQUIREMENT;
-	  }
-	  break;
+
+      let choices = [];
+
+      if (hollowBlueCounter < neededBlue || hollowRedCounter < neededRed) {
+        choices.push("hollow");
+      }
+      if (totalBlueForMaxBlue < neededMaxBlue && maxBlueUses < 3) {
+        choices.push("maxBlue");
+      }
+      if (redHitCounterForMaxRed < neededMaxRed && maxRedUses < 3) {
+        choices.push("maxRed");
+      }
+      if (reverseChargeCounter < REVERSE_CT_REQUIREMENT) {
+        choices.push("reverse");
+      }
+
+      if (choices.length > 0) {
+        const choice = choices[Math.floor(Math.random() * choices.length)];
+
+        if (choice === "hollow") {
+          hollowBlueCounter = neededBlue;
+          hollowRedCounter = neededRed;
+        } else if (choice === "maxBlue") {
+          totalBlueForMaxBlue = neededMaxBlue;
+        } else if (choice === "maxRed") {
+          redHitCounterForMaxRed = neededMaxRed;
+        } else if (choice === "reverse") {
+          reverseChargeCounter = REVERSE_CT_REQUIREMENT;
+        }
+      }
+      break;
     case "green":
       player.hp = Math.min(player.maxHp, player.hp + 0.25 * player.maxHp);
       break;
@@ -1917,6 +2119,28 @@ function spawnCleaveSlash() {
   cleaveSlashes.push(cs);
 }
 
+let cleaveSoundBag = [];
+
+function playRandomCleaveSound() {
+  if (cleaveSoundBag.length === 0) {
+    cleaveSoundBag = [cleave1Audio, cleave2Audio, cleave3Audio, cleave4Audio];
+
+    for (let i = cleaveSoundBag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = cleaveSoundBag[i];
+      cleaveSoundBag[i] = cleaveSoundBag[j];
+      cleaveSoundBag[j] = temp;
+    }
+  }
+
+  const audio = cleaveSoundBag.pop();
+  if (!audio) return;
+
+  audio.currentTime = 0;
+  audio.volume = 0.6;
+  audio.play().catch((err) => console.log(audio.src + " playback prevented:", err));
+}
+
 function getDistanceDamageMultiplier() {
   const maxMultiplier = 2.5;
   const maxDistance = 500;
@@ -1939,7 +2163,8 @@ function updateBoss(dt) {
   if (
     boss.state === "normal" ||
     boss.state === "regenerating" ||
-    boss.state === "laserAttack"
+    boss.state === "laserAttack" ||
+    boss.state === "laserAttack2"
   ) {
     bossActionTimer++;
   }
@@ -2007,29 +2232,15 @@ function updateBoss(dt) {
     if (bossActionTimer >= threshold) {
       bossActionTimer = 0;
       let action = Math.random();
-      if (action < 0.08) startDashAttack();
-      else if (action < 0.18) { boss.state = "earthquake"; boss.vy = -10 * SPEED_FACTOR; }
-      else if (action < 0.25) { boss.state = "normalJump"; boss.airTime = 0.5; boss.vy = -12 * SPEED_FACTOR; }
-      else if (action < 0.6) {
-        boss.state = "regenerating"; boss.stateTimer = 3; regenTimer = regenTicks = 0; boss.vx = boss.vy = 0;
-      }
-      else if (action < 0.8) {
-        boss.state = "laserAttack"; boss.laserAttackPhase = "jump"; boss.airTime = 0.5;
-        boss.vy = -12 * SPEED_FACTOR; boss.groundLasers = []; boss.laserSpawnTimer = 0; boss.laserAttackTotalTime = 10;
-      }
-   }
-    if (bossActionTimer >= threshold) {
-      bossActionTimer = 0;
-      let action = Math.random();
 
-      if (action < 0.10) {
+      if (action < 0.1) {
         startDashAttack();
       }
       else if (action < 0.25) {
         boss.state = "earthquake";
         boss.vy = -10 * SPEED_FACTOR;
       }
-      else if (action < 0.40) {
+      else if (action < 0.4) {
         boss.state = "normalJump";
        boss.airTime = 0.5;
        boss.vy = -12 * SPEED_FACTOR;
@@ -2049,7 +2260,15 @@ function updateBoss(dt) {
         regenTimer = regenTicks = 0;
        boss.vx = boss.vy = 0;
       }
-      else {
+	  else if (action < 0.75) {
+        boss.state = "laserAttack2";
+		boss.laserAttackPhase = "warn";
+		boss.laserAttackTotalTime = 0.7;
+		boss.laserAttack2AudioPlayed = false;
+		boss.laserAttack2ShotFired = false;
+		boss.vx = 0;
+		boss.vy = 0;
+	  }else {
         startDashAttack();
       }
     }
@@ -2205,7 +2424,41 @@ function updateBoss(dt) {
       }
       if (boss.laserAttackTotalTime <= 0) boss.state = "normal";
     }
-  } else if (boss.state === "dashAttackCharge") {
+  } else if (boss.state === "laserAttack2") {
+  if (boss.laserAttackPhase === "warn") {
+    boss.laserAttackTotalTime -= 1 / 60;
+
+    if (!boss.laserAttack2AudioPlayed) {
+      dismantleAudio.currentTime = 0;
+      dismantleAudio.play().catch((err) => console.log("dismantle.mp3 playback prevented:", err));
+      boss.laserAttack2AudioPlayed = true;
+    }
+
+    if (boss.laserAttackTotalTime <= 0) {
+      let dx = player.x + player.width / 2 - (boss.x + boss.width / 2);
+      let dy = player.y + player.height / 2 - (boss.y + boss.height / 2);
+      let finalAngle = Math.atan2(dy, dx);
+
+      boss.groundLasers.push({
+        x: boss.x + boss.width / 2,
+        y: boss.y + boss.height / 2,
+        vx: 20 * Math.cos(finalAngle),
+        vy: 20 * Math.sin(finalAngle),
+        damage: bossLaserDamage * 5,
+        size: 55,
+        special: false,
+        angle: finalAngle,
+        image: slashImage,
+        isLaserAttack2: true
+      });
+
+      boss.state = "normal";
+      boss.laserAttackPhase = "";
+      boss.laserAttack2AudioPlayed = false;
+      boss.laserAttack2ShotFired = false;
+    }
+  }
+} else if (boss.state === "dashAttackCharge") {
     boss.chargeTimer -= 1 / 60;
     if (boss.chargeTimer <= 0) {
       boss.state = "dashAttackDash";
@@ -2221,26 +2474,51 @@ function updateBoss(dt) {
     boss.x += boss.vx;
     boss.y += boss.vy;
     if (rectIntersect(player, boss)) {
-      if (!boss.hasDamagedPlayerDash) {
-        player.hp -= 250;
-        player.stunned = true;
-        player.stunTimer = 999;
-        boss.hasDamagedPlayerDash = true;
-      }
-      player.dragged = true;
-      player.x += boss.vx;
-      player.y += boss.vy;
-    }
+	  if (!boss.hasDamagedPlayerDash) {
+		player.hp -= 250;
+		player.stunned = true;
+		player.stunTimer = 999;
+		boss.hasDamagedPlayerDash = true;
+	  }
+
+	  player.dragged = true;
+	  player.x += boss.vx;
+	  player.y += boss.vy;
+
+	  if (!boss.dashCleaveTimer) boss.dashCleaveTimer = 0;
+	  boss.dashCleaveTimer += 1 / 60;
+	  boss.dashClvTimer += 1/60;
+
+	  if (boss.dashCleaveTimer >= 0.05) {
+		boss.dashCleaveTimer = 0;
+		playRandomCleaveSound();
+	  }
+	  if (boss.dashCleaveTimer >= 0.2) {
+		boss.dashClvTimer = 0;
+		spawnCleaveSlash();
+	  }
+	} else {
+	  boss.dashCleaveTimer = 0;
+	}
     if (boss.x <= 0 || boss.x + boss.width >= canvas.width) {
-      boss.needsSlamShake = true;
-      boss.x = boss.x <= 0 ? 0 : canvas.width - boss.width;
-      boss.state = "dashAttackStunned";
-      boss.stateTimer = 5;
-      boss.vx = 0;
-      boss.vy = 0;
-      player.stunned = false;
-      player.dragged = false;
-    }
+	  boss.needsSlamShake = true;
+	  boss.x = boss.x <= 0 ? 0 : canvas.width - boss.width;
+
+	  if (player.dragged) {
+		dismantle2Audio.currentTime = 0;
+		dismantle2Audio.volume = 1;
+		dismantle2Audio.play().catch((err) => console.log("dismantle2.mp3 playback prevented:", err));
+	  }
+
+	  boss.state = "dashAttackStunned";
+	  boss.stateTimer = 5;
+	  boss.vx = 0;
+	  boss.vy = 0;
+	  player.stunned = false;
+	  player.dragged = false;
+	  boss.dashCleaveTimer = 0;
+	  dismantle2Audio.volume = 0.6;
+	}
     boss.dashAfterimages.push({ x: boss.x, y: boss.y, ttl: 0.1 });
   } else if (boss.state === "dashAttackStunned") {
     boss.stateTimer -= 1 / 60;
@@ -2258,7 +2536,8 @@ function updateBoss(dt) {
   if (
     boss.state === "normal" ||
     boss.state === "regenerating" ||
-    boss.state === "laserAttack"
+    boss.state === "laserAttack" ||
+    boss.state === "laserAttack2"
   ) {
     boss.x += boss.vx;
   }
@@ -2321,22 +2600,32 @@ function updateBossLasers(dt) {
       height: l.size * 2
     };
     if (rectIntersect(laserHitbox, player) && !player.invincible) {
-      if (l.isFugaProjectile) {
-        player.hp -= l.damage;
-        boss.fugaFlashTimer = 0.5;
-      } else {
-        let dmg = l.damage;
-        if (!l.special && player.brownDamageReduction) {
-          dmg *= 0.5;
-        }
-        if (currentBGImage === infiniteVoidBG) {
-          dmg *= 0.75;
-        }
-        player.hp -= dmg;
-        if (player.thorn) boss.hp -= l.damage;
-      }
-      boss.groundLasers.splice(i, 1);
-    }
+	  if (l.isFugaProjectile) {
+		player.hp -= l.damage;
+		boss.fugaFlashTimer = 0.5;
+	  } else if (l.isLaserAttack2) {
+		dismantle2Audio.currentTime = 0;
+		dismantle2Audio.play().catch((err) => console.log("dismantle2.mp3 playback prevented:", err));
+
+		let dmg = l.damage;
+		if (currentBGImage === infiniteVoidBG) {
+		  dmg *= 0.75;
+		}
+		player.hp -= dmg;
+		if (player.thorn) boss.hp -= l.damage;
+	  } else {
+		let dmg = l.damage;
+		if (!l.special && player.brownDamageReduction) {
+		  dmg *= 0.5;
+		}
+		if (currentBGImage === infiniteVoidBG) {
+		  dmg *= 0.75;
+		}
+		player.hp -= dmg;
+		if (player.thorn) boss.hp -= l.damage;
+	  }
+	boss.groundLasers.splice(i, 1);
+	}
   }
 }
 
